@@ -131,6 +131,7 @@ struct ReportDetailView: View {
     @State private var showingEditSheet = false
     @State private var showingMessageInput = false
     @State private var newMessageText = ""
+    @State private var isUserMessage = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -182,6 +183,40 @@ struct ReportDetailView: View {
             // Message input
             VStack(spacing: 8) {
                 Divider()
+
+                // Speaker toggle
+                HStack(spacing: 12) {
+                    Text("話者:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Button(action: { isUserMessage = true }) {
+                        Text("自分")
+                            .font(.caption)
+                            .fontWeight(isUserMessage ? .bold : .regular)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(isUserMessage ? Color.pink : Color(.secondarySystemBackground))
+                            .foregroundColor(isUserMessage ? .white : .primary)
+                            .cornerRadius(12)
+                    }
+
+                    Button(action: { isUserMessage = false }) {
+                        Text("推し")
+                            .font(.caption)
+                            .fontWeight(!isUserMessage ? .bold : .regular)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(!isUserMessage ? Color.purple : Color(.secondarySystemBackground))
+                            .foregroundColor(!isUserMessage ? .white : .primary)
+                            .cornerRadius(12)
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+
                 HStack {
                     TextField("メッセージを追加...", text: $newMessageText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -189,11 +224,12 @@ struct ReportDetailView: View {
                     Button(action: addMessage) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
-                            .foregroundColor(.pink)
+                            .foregroundColor(isUserMessage ? .pink : .purple)
                     }
                     .disabled(newMessageText.isEmpty)
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.bottom)
             }
             .background(Color(.systemBackground))
         }
@@ -228,7 +264,7 @@ struct ReportDetailView: View {
 
         let message = ChatMessageEntity.create(in: viewContext, report: report)
         message.content = newMessageText
-        message.messageType = "user"
+        message.messageType = isUserMessage ? "user" : "oshi"
         message.order = Int32(report.messagesArray.count)
 
         newMessageText = ""
