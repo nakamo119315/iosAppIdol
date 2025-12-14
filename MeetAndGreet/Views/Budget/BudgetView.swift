@@ -9,6 +9,7 @@ struct BudgetView: View {
     ) private var expenses: FetchedResults<ExpenseEntity>
 
     @State private var showingAddSheet = false
+    @State private var selectedTab = 0
 
     private var totalAmount: Int {
         expenses.reduce(0) { $0 + Int($1.amount) }
@@ -16,31 +17,73 @@ struct BudgetView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Summary
-                VStack(spacing: 8) {
-                    Text("今月の支出")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Summary
+                    VStack(spacing: 8) {
+                        Text("今月の支出")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
 
-                    Text("¥\(totalAmount.withComma)")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundColor(.pink)
+                        Text("¥\(totalAmount.withComma)")
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .foregroundColor(.pink)
 
-                    Text("\(expenses.count)件")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Text("\(expenses.count)件")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                    .padding(.horizontal)
+
+                    if !expenses.isEmpty {
+                        // Chart section
+                        VStack(spacing: 16) {
+                            // Tab selector
+                            Picker("グラフ", selection: $selectedTab) {
+                                Text("カテゴリ").tag(0)
+                                Text("支払い方法").tag(1)
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .padding(.horizontal)
+
+                            if selectedTab == 0 {
+                                CategoryChartSection(expenses: Array(expenses))
+                            } else {
+                                PaymentMethodChartSection(expenses: Array(expenses))
+                            }
+                        }
+                        .padding(.vertical)
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(16)
+                        .padding(.horizontal)
+
+                        // Expense list
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("支出一覧")
+                                .font(.headline)
+                                .padding(.horizontal)
+
+                            ForEach(expenses, id: \.self) { expense in
+                                NavigationLink(destination: ExpenseDetailView(expense: expense)) {
+                                    ExpenseRowView(expense: expense)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                                .background(Color(.tertiarySystemBackground))
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                            }
+                        }
+                    } else {
+                        emptyState
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .background(Color(.secondarySystemBackground))
-
-                // List
-                if expenses.isEmpty {
-                    emptyState
-                } else {
-                    expenseList
-                }
+                .padding(.vertical)
             }
             .navigationTitle("家計簿")
             .toolbar {
@@ -54,18 +97,6 @@ struct BudgetView: View {
                 ExpenseEditorView(expense: nil)
             }
         }
-    }
-
-    private var expenseList: some View {
-        List {
-            ForEach(expenses, id: \.self) { expense in
-                NavigationLink(destination: ExpenseDetailView(expense: expense)) {
-                    ExpenseRowView(expense: expense)
-                }
-            }
-            .onDelete(perform: deleteExpenses)
-        }
-        .listStyle(InsetGroupedListStyle())
     }
 
     private var emptyState: some View {
@@ -90,17 +121,260 @@ struct BudgetView: View {
             .cornerRadius(12)
         }
         .padding()
-        .frame(maxHeight: .infinity)
-    }
-
-    private func deleteExpenses(at offsets: IndexSet) {
-        for index in offsets {
-            viewContext.delete(expenses[index])
-        }
-        CoreDataStack.shared.saveContext()
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 }
 
+// MARK: - Category Chart Section
+struct CategoryChartSection: View {
+    let expenses: [ExpenseEntity]
+
+    private var categoryData: [(category: ExpenseCategory, amount: Int, percentage: Double)] {
+        let total = expenses.reduce(0) { $0 + Int($1.amount) }
+        guard total > 0 else { return [] }
+
+        var data: [ExpenseCategory: Int] = [:]
+        for expense in expenses {
+            let category = ExpenseCategory(rawValue: expense.wrappedCategory) ?? .other
+            data[category, default: 0] += Int(expense.amount)
+        }
+
+        return data.map { (category: $0.key, amount: $0.value, percentage: Double($0.value) / Double(total)) }
+            .sorted { $0.amount > $1.amount }
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Pie Chart
+            PieChartView(data: categoryData.map { (Color.forExpenseCategory($0.category), $0.percentage) })
+                .frame(height: 200)
+                .padding(.horizontal)
+
+            // Legend
+            VStack(spacing: 8) {
+                ForEach(categoryData, id: \.category) { item in
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(Color.forExpenseCategory(item.category))
+                            .frame(width: 12, height: 12)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: item.category.icon)
+                                .font(.caption)
+                            Text(item.category.rawValue)
+                                .font(.subheadline)
+                        }
+
+                        Spacer()
+
+                        Text("¥\(item.amount.withComma)")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text(String(format: "%.1f%%", item.percentage * 100))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(width: 50, alignment: .trailing)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Payment Method Chart Section
+struct PaymentMethodChartSection: View {
+    let expenses: [ExpenseEntity]
+
+    private var paymentData: [(method: String, amount: Int, percentage: Double)] {
+        let total = expenses.reduce(0) { $0 + Int($1.amount) }
+        guard total > 0 else { return [] }
+
+        var data: [String: Int] = [:]
+        for expense in expenses {
+            let method = expense.wrappedPaymentMethod
+            data[method, default: 0] += Int(expense.amount)
+        }
+
+        return data.map { (method: $0.key, amount: $0.value, percentage: Double($0.value) / Double(total)) }
+            .sorted { $0.amount > $1.amount }
+    }
+
+    private func colorForPaymentMethod(_ method: String) -> Color {
+        switch method {
+        case "現金": return .green
+        case "クレジットカード": return .blue
+        case "電子マネー": return .orange
+        case "QRコード決済": return .purple
+        case "銀行振込": return Color(red: 0.0, green: 0.5, blue: 0.5)
+        default: return .gray
+        }
+    }
+
+    private func iconForPaymentMethod(_ method: String) -> String {
+        switch method {
+        case "現金": return "banknote"
+        case "クレジットカード": return "creditcard"
+        case "電子マネー": return "wave.3.right"
+        case "QRコード決済": return "qrcode"
+        case "銀行振込": return "building.columns"
+        default: return "questionmark.circle"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Bar Chart
+            BarChartView(data: paymentData.map { (colorForPaymentMethod($0.method), $0.percentage, $0.method) })
+                .frame(height: 180)
+                .padding(.horizontal)
+
+            // Legend
+            VStack(spacing: 8) {
+                ForEach(paymentData, id: \.method) { item in
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(colorForPaymentMethod(item.method))
+                            .frame(width: 12, height: 12)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: iconForPaymentMethod(item.method))
+                                .font(.caption)
+                            Text(item.method)
+                                .font(.subheadline)
+                        }
+
+                        Spacer()
+
+                        Text("¥\(item.amount.withComma)")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text(String(format: "%.1f%%", item.percentage * 100))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(width: 50, alignment: .trailing)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Pie Chart View
+struct PieChartView: View {
+    let data: [(color: Color, percentage: Double)]
+
+    var body: some View {
+        GeometryReader { geometry in
+            let size = min(geometry.size.width, geometry.size.height)
+            let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            let radius = size / 2 - 10
+
+            ZStack {
+                ForEach(0..<data.count, id: \.self) { index in
+                    PieSlice(
+                        startAngle: startAngle(for: index),
+                        endAngle: endAngle(for: index)
+                    )
+                    .fill(data[index].color)
+                    .frame(width: radius * 2, height: radius * 2)
+                    .position(center)
+                }
+
+                // Center circle (donut effect)
+                Circle()
+                    .fill(Color(.secondarySystemBackground))
+                    .frame(width: radius, height: radius)
+                    .position(center)
+
+                // Center text
+                VStack(spacing: 2) {
+                    Text("合計")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(data.count)件")
+                        .font(.headline)
+                }
+                .position(center)
+            }
+        }
+    }
+
+    private func startAngle(for index: Int) -> Angle {
+        let sum = data.prefix(index).reduce(0) { $0 + $1.percentage }
+        return Angle(degrees: sum * 360 - 90)
+    }
+
+    private func endAngle(for index: Int) -> Angle {
+        let sum = data.prefix(index + 1).reduce(0) { $0 + $1.percentage }
+        return Angle(degrees: sum * 360 - 90)
+    }
+}
+
+struct PieSlice: Shape {
+    let startAngle: Angle
+    let endAngle: Angle
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+
+        path.move(to: center)
+        path.addArc(
+            center: center,
+            radius: radius,
+            startAngle: startAngle,
+            endAngle: endAngle,
+            clockwise: false
+        )
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+// MARK: - Bar Chart View
+struct BarChartView: View {
+    let data: [(color: Color, percentage: Double, label: String)]
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ForEach(0..<data.count, id: \.self) { index in
+                HStack(spacing: 8) {
+                    Text(data[index].label)
+                        .font(.caption)
+                        .frame(width: 80, alignment: .leading)
+                        .lineLimit(1)
+
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color(.systemGray5))
+                                .frame(height: 20)
+
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(data[index].color)
+                                .frame(width: max(geometry.size.width * CGFloat(data[index].percentage), 4), height: 20)
+                        }
+                    }
+                    .frame(height: 20)
+
+                    Text(String(format: "%.0f%%", data[index].percentage * 100))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 35, alignment: .trailing)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Expense Row View
 struct ExpenseRowView: View {
     let expense: ExpenseEntity
 
@@ -123,6 +397,7 @@ struct ExpenseRowView: View {
                 Text(expense.wrappedTitle)
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .foregroundColor(.primary)
 
                 HStack(spacing: 8) {
                     Text(category.rawValue)
@@ -141,6 +416,7 @@ struct ExpenseRowView: View {
                 Text("¥\(expense.amount.withComma)")
                     .font(.subheadline)
                     .fontWeight(.semibold)
+                    .foregroundColor(.primary)
 
                 if !expense.isPaid {
                     Text("未払い")
@@ -153,10 +429,10 @@ struct ExpenseRowView: View {
                 }
             }
         }
-        .padding(.vertical, 4)
     }
 }
 
+// MARK: - Expense Detail View
 struct ExpenseDetailView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentationMode
@@ -274,6 +550,7 @@ struct ExpenseDetailView: View {
     }
 }
 
+// MARK: - Expense Editor View
 struct ExpenseEditorView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentationMode
