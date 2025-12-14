@@ -472,10 +472,8 @@ struct ScheduleDetailView: View {
                             .font(.headline)
                         Image(uiImage: uiImage)
                             .resizable()
-                            .scaledToFill()
+                            .scaledToFit()
                             .frame(maxWidth: .infinity)
-                            .frame(height: 250)
-                            .clipped()
                             .cornerRadius(12)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

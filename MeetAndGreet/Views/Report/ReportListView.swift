@@ -311,7 +311,7 @@ struct ReportDetailView: View {
         }
         .sheet(isPresented: $showingMessageEditor) {
             if let message = editingMessage {
-                MessageEditorSheet(message: message, messageText: editingMessageText)
+                MessageEditorSheet(message: message, messageText: editingMessageText, report: report)
             }
         }
     }
@@ -357,11 +357,13 @@ struct MessageEditorSheet: View {
     @Environment(\.presentationMode) var presentationMode
 
     @ObservedObject var message: ChatMessageEntity
+    @ObservedObject var report: ReportEntity
     @State var messageText: String
     @State private var isUserSpeaker: Bool = true
 
-    init(message: ChatMessageEntity, messageText: String) {
+    init(message: ChatMessageEntity, messageText: String, report: ReportEntity) {
         self.message = message
+        self.report = report
         self._messageText = State(initialValue: messageText)
         self._isUserSpeaker = State(initialValue: message.isUserMessage)
     }
@@ -395,6 +397,7 @@ struct MessageEditorSheet: View {
                         message.content = messageText
                         message.messageType = isUserSpeaker ? "user" : "oshi"
                         CoreDataStack.shared.saveContext()
+                        report.objectWillChange.send()
                         presentationMode.wrappedValue.dismiss()
                     }
                     .disabled(messageText.isEmpty)
