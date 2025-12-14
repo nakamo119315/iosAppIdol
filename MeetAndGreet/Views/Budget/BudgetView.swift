@@ -9,27 +9,79 @@ struct BudgetView: View {
     ) private var expenses: FetchedResults<ExpenseEntity>
 
     @State private var showingAddSheet = false
-    @State private var selectedTab = 0
+    @State private var selectedChartTab = 0
+    @State private var currentMonth = Date()
+
+    private let calendar = Calendar.current
+
+    private var expensesForMonth: [ExpenseEntity] {
+        expenses.filter { expense in
+            calendar.isDate(expense.wrappedExpenseDate, equalTo: currentMonth, toGranularity: .month)
+        }
+    }
 
     private var totalAmount: Int {
-        expenses.reduce(0) { $0 + Int($1.amount) }
+        expensesForMonth.reduce(0) { $0 + Int($1.amount) }
+    }
+
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年 M月"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: currentMonth)
+    }
+
+    private var isCurrentMonth: Bool {
+        calendar.isDate(currentMonth, equalTo: Date(), toGranularity: .month)
     }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Month navigation
+                    HStack {
+                        Button(action: previousMonth) {
+                            Image(systemName: "chevron.left")
+                                .font(.title3)
+                                .foregroundColor(.pink)
+                        }
+
+                        Spacer()
+
+                        Text(monthYearString)
+                            .font(.title3)
+                            .fontWeight(.bold)
+
+                        Spacer()
+
+                        Button(action: nextMonth) {
+                            Image(systemName: "chevron.right")
+                                .font(.title3)
+                                .foregroundColor(.pink)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+
+                    if !isCurrentMonth {
+                        Button(action: goToCurrentMonth) {
+                            Text("今月に戻る")
+                                .font(.caption)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 4)
+                                .background(Color.pink.opacity(0.2))
+                                .foregroundColor(.pink)
+                                .cornerRadius(8)
+                        }
+                    }
+
                     // Summary
                     VStack(spacing: 8) {
-                        Text("今月の支出")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
                         Text("¥\(totalAmount.withComma)")
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.pink)
 
-                        Text("\(expenses.count)件")
+                        Text("\(expensesForMonth.count)件")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -39,21 +91,21 @@ struct BudgetView: View {
                     .cornerRadius(16)
                     .padding(.horizontal)
 
-                    if !expenses.isEmpty {
+                    if !expensesForMonth.isEmpty {
                         // Chart section
                         VStack(spacing: 16) {
                             // Tab selector
-                            Picker("グラフ", selection: $selectedTab) {
+                            Picker("グラフ", selection: $selectedChartTab) {
                                 Text("カテゴリ").tag(0)
                                 Text("支払い方法").tag(1)
                             }
                             .pickerStyle(SegmentedPickerStyle())
                             .padding(.horizontal)
 
-                            if selectedTab == 0 {
-                                CategoryChartSection(expenses: Array(expenses))
+                            if selectedChartTab == 0 {
+                                CategoryChartSection(expenses: expensesForMonth)
                             } else {
-                                PaymentMethodChartSection(expenses: Array(expenses))
+                                PaymentMethodChartSection(expenses: expensesForMonth)
                             }
                         }
                         .padding(.vertical)
@@ -67,7 +119,7 @@ struct BudgetView: View {
                                 .font(.headline)
                                 .padding(.horizontal)
 
-                            ForEach(expenses, id: \.self) { expense in
+                            ForEach(expensesForMonth, id: \.self) { expense in
                                 NavigationLink(destination: ExpenseDetailView(expense: expense)) {
                                     ExpenseRowView(expense: expense)
                                 }
@@ -80,7 +132,7 @@ struct BudgetView: View {
                             }
                         }
                     } else {
-                        emptyState
+                        emptyStateForMonth
                     }
                 }
                 .padding(.vertical)
@@ -99,13 +151,25 @@ struct BudgetView: View {
         }
     }
 
-    private var emptyState: some View {
+    private func previousMonth() {
+        currentMonth = calendar.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+    }
+
+    private func nextMonth() {
+        currentMonth = calendar.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+    }
+
+    private func goToCurrentMonth() {
+        currentMonth = Date()
+    }
+
+    private var emptyStateForMonth: some View {
         VStack(spacing: 16) {
             Image(systemName: "yensign.circle")
                 .font(.system(size: 60))
                 .foregroundColor(.gray)
 
-            Text("支出がありません")
+            Text("この月の支出はありません")
                 .font(.headline)
 
             Text("右上の＋ボタンから支出を記録しましょう")

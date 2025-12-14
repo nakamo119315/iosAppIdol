@@ -91,11 +91,17 @@ class CoreDataStack {
         scheduleCreatedAt.name = "createdAt"
         scheduleCreatedAt.attributeType = .dateAttributeType
 
+        let scheduleImageData = NSAttributeDescription()
+        scheduleImageData.name = "imageData"
+        scheduleImageData.attributeType = .binaryDataAttributeType
+        scheduleImageData.isOptional = true
+        scheduleImageData.allowsExternalBinaryDataStorage = true
+
         scheduleEntity.properties = [
             scheduleId, scheduleTitle, scheduleDesc, scheduleDate,
             scheduleLocation, scheduleCategory, scheduleCompleted,
             scheduleNotes, scheduleTicketDeadline, schedulePaymentDeadline,
-            scheduleCreatedAt
+            scheduleCreatedAt, scheduleImageData
         ]
 
         // Expense Entity

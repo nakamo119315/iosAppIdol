@@ -91,7 +91,7 @@ struct ScheduleListView: View {
                 }
             }
             .sheet(isPresented: $showingAddSheet) {
-                ScheduleEditorView(schedule: nil)
+                ScheduleEditorView(schedule: nil, initialDate: selectedDate)
             }
         }
     }
@@ -465,6 +465,25 @@ struct ScheduleDetailView: View {
                 .background(Color(.secondarySystemBackground))
                 .cornerRadius(12)
 
+                // Image
+                if let imageData = schedule.imageData, let uiImage = UIImage(data: imageData) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("画像")
+                            .font(.headline)
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 250)
+                            .clipped()
+                            .cornerRadius(12)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(12)
+                }
+
                 // Notes
                 if !schedule.wrappedNotes.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
@@ -520,7 +539,7 @@ struct ScheduleDetailView: View {
             }
         }
         .sheet(isPresented: $showingEditSheet) {
-            ScheduleEditorView(schedule: schedule)
+            ScheduleEditorView(schedule: schedule, initialDate: nil)
         }
     }
 }
@@ -531,12 +550,15 @@ struct ScheduleEditorView: View {
     @Environment(\.presentationMode) var presentationMode
 
     var schedule: ScheduleEntity?
+    var initialDate: Date?
 
     @State private var title = ""
     @State private var eventDate = Date()
     @State private var location = ""
     @State private var category = EventCategory.live
     @State private var notes = ""
+    @State private var selectedImage: UIImage?
+    @State private var showingImagePicker = false
 
     var body: some View {
         NavigationView {
@@ -553,6 +575,32 @@ struct ScheduleEditorView: View {
                     DatePicker("日時", selection: $eventDate)
 
                     TextField("場所", text: $location)
+                }
+
+                Section(header: Text("画像")) {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 200)
+                            .clipped()
+                            .cornerRadius(8)
+                            .onTapGesture {
+                                showingImagePicker = true
+                            }
+
+                        Button(action: { selectedImage = nil }) {
+                            Label("画像を削除", systemImage: "trash")
+                                .foregroundColor(.red)
+                        }
+                    } else {
+                        Button(action: { showingImagePicker = true }) {
+                            HStack {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                Text("画像を選択")
+                            }
+                        }
+                    }
                 }
 
                 Section(header: Text("メモ")) {
@@ -576,6 +624,9 @@ struct ScheduleEditorView: View {
                     .disabled(title.isEmpty)
                 }
             }
+            .sheet(isPresented: $showingImagePicker) {
+                ImagePicker(image: $selectedImage)
+            }
             .onAppear {
                 if let schedule = schedule {
                     title = schedule.wrappedTitle
@@ -583,6 +634,11 @@ struct ScheduleEditorView: View {
                     location = schedule.wrappedLocation
                     category = EventCategory(rawValue: schedule.wrappedCategory) ?? .live
                     notes = schedule.wrappedNotes
+                    if let imageData = schedule.imageData {
+                        selectedImage = UIImage(data: imageData)
+                    }
+                } else if let initialDate = initialDate {
+                    eventDate = initialDate
                 }
             }
         }
@@ -595,7 +651,50 @@ struct ScheduleEditorView: View {
         entity.location = location
         entity.category = category.rawValue
         entity.notes = notes
+        if let image = selectedImage {
+            entity.imageData = image.jpegData(compressionQuality: 0.7)
+        } else {
+            entity.imageData = nil
+        }
         CoreDataStack.shared.saveContext()
+    }
+}
+
+// MARK: - Image Picker
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.presentationMode) var presentationMode
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.image = image
+            }
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
+        }
     }
 }
 

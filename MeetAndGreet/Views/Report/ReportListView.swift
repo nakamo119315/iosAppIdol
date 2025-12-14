@@ -132,6 +132,9 @@ struct ReportDetailView: View {
     @State private var showingMessageInput = false
     @State private var newMessageText = ""
     @State private var isUserMessage = true
+    @State private var editingMessage: ChatMessageEntity?
+    @State private var editingMessageText = ""
+    @State private var showingMessageEditor = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -208,6 +211,22 @@ struct ReportDetailView: View {
                     // Chat messages
                     ForEach(report.messagesArray, id: \.self) { message in
                         ChatBubbleView(message: message)
+                            .contextMenu {
+                                Button(action: {
+                                    editingMessageText = message.wrappedContent
+                                    editingMessage = message
+                                    showingMessageEditor = true
+                                }) {
+                                    Label("編集", systemImage: "pencil")
+                                }
+                                Button(action: {
+                                    viewContext.delete(message)
+                                    CoreDataStack.shared.saveContext()
+                                }) {
+                                    Label("削除", systemImage: "trash")
+                                        .foregroundColor(.red)
+                                }
+                            }
                     }
                 }
                 .padding()
@@ -290,6 +309,11 @@ struct ReportDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             ReportEditorView(report: report)
         }
+        .sheet(isPresented: $showingMessageEditor) {
+            if let message = editingMessage {
+                MessageEditorSheet(message: message, messageText: editingMessageText)
+            }
+        }
     }
 
     private func addMessage() {
@@ -317,12 +341,64 @@ struct ChatBubbleView: View {
             Text(message.wrappedContent)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(message.isUserMessage ? Color.pink : Color(.secondarySystemBackground))
-                .foregroundColor(message.isUserMessage ? .white : .primary)
+                .background(message.isUserMessage ? Color.pink : Color.purple)
+                .foregroundColor(.white)
                 .cornerRadius(16)
 
             if !message.isUserMessage {
                 Spacer()
+            }
+        }
+    }
+}
+
+struct MessageEditorSheet: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.presentationMode) var presentationMode
+
+    @ObservedObject var message: ChatMessageEntity
+    @State var messageText: String
+    @State private var isUserSpeaker: Bool = true
+
+    init(message: ChatMessageEntity, messageText: String) {
+        self.message = message
+        self._messageText = State(initialValue: messageText)
+        self._isUserSpeaker = State(initialValue: message.isUserMessage)
+    }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("メッセージ")) {
+                    TextEditor(text: $messageText)
+                        .frame(minHeight: 100)
+                }
+
+                Section(header: Text("話者")) {
+                    Picker("話者", selection: $isUserSpeaker) {
+                        Text("自分").tag(true)
+                        Text("推し").tag(false)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+            }
+            .navigationTitle("メッセージ編集")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        message.content = messageText
+                        message.messageType = isUserSpeaker ? "user" : "oshi"
+                        CoreDataStack.shared.saveContext()
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .disabled(messageText.isEmpty)
+                }
             }
         }
     }

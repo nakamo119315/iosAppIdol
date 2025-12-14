@@ -14,6 +14,7 @@ public class ScheduleEntity: NSManagedObject {
     @NSManaged public var ticketDeadline: Date?
     @NSManaged public var paymentDeadline: Date?
     @NSManaged public var createdAt: Date?
+    @NSManaged public var imageData: Data?
 }
 
 extension ScheduleEntity {
