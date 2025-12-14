@@ -163,18 +163,51 @@ struct ReportDetailView: View {
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
 
+                    // Notes section (before chat)
+                    if !report.wrappedNotes.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "note.text")
+                                    .foregroundColor(.orange)
+                                Text("メモ")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.orange)
+                            }
+
+                            Text(report.wrappedNotes)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.orange.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    }
+
+                    // Chat section header
+                    if !report.messagesArray.isEmpty {
+                        HStack {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .foregroundColor(.gray)
+                            Text("会話ログ")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.gray)
+                            Spacer()
+                        }
+                        .padding(.top, 8)
+                    }
+
                     // Chat messages
                     ForEach(report.messagesArray, id: \.self) { message in
                         ChatBubbleView(message: message)
-                    }
-
-                    if !report.wrappedNotes.isEmpty {
-                        Text(report.wrappedNotes)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding()
-                            .background(Color(.secondarySystemBackground))
-                            .cornerRadius(12)
                     }
                 }
                 .padding()
