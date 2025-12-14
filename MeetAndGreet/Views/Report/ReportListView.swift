@@ -135,6 +135,7 @@ struct ReportDetailView: View {
     @State private var editingMessage: ChatMessageEntity?
     @State private var editingMessageText = ""
     @State private var showingMessageEditor = false
+    @State private var refreshID = UUID()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -222,12 +223,14 @@ struct ReportDetailView: View {
                                 Button(action: {
                                     viewContext.delete(message)
                                     CoreDataStack.shared.saveContext()
+                                    refreshID = UUID()
                                 }) {
                                     Label("削除", systemImage: "trash")
                                         .foregroundColor(.red)
                                 }
                             }
                     }
+                    .id(refreshID)
                 }
                 .padding()
             }
@@ -309,7 +312,9 @@ struct ReportDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             ReportEditorView(report: report)
         }
-        .sheet(isPresented: $showingMessageEditor) {
+        .sheet(isPresented: $showingMessageEditor, onDismiss: {
+            refreshID = UUID()
+        }) {
             if let message = editingMessage {
                 MessageEditorSheet(message: message, messageText: editingMessageText, report: report)
             }
@@ -326,6 +331,7 @@ struct ReportDetailView: View {
 
         newMessageText = ""
         CoreDataStack.shared.saveContext()
+        refreshID = UUID()
     }
 }
 
