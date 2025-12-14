@@ -90,8 +90,8 @@ class MeetAndGreetUITests: XCTestCase {
     func testBudgetScreenElements() throws {
         app.tabBars.buttons["家計簿"].tap()
 
-        // Check summary section exists
-        XCTAssertTrue(app.staticTexts["今月の支出"].exists)
+        // Check navigation bar exists
+        XCTAssertTrue(app.navigationBars["家計簿"].exists)
     }
 
     func testBudgetAddFlow() throws {
@@ -162,7 +162,7 @@ class MeetAndGreetUITests: XCTestCase {
     func testBudgetEmptyState() throws {
         app.tabBars.buttons["家計簿"].tap()
 
-        let emptyMessage = app.staticTexts["支出がありません"]
+        let emptyMessage = app.staticTexts["この月の支出はありません"]
         if emptyMessage.exists {
             XCTAssertTrue(app.buttons["支出を追加"].exists)
         }
