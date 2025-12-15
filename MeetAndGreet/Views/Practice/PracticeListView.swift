@@ -136,8 +136,18 @@ struct PracticeDetailView: View {
     @Environment(\.presentationMode) var presentationMode
 
     @ObservedObject var script: PracticeScriptEntity
+    @FetchRequest private var dialogues: FetchedResults<PracticeDialogueEntity>
+
     @State private var showingEditSheet = false
     @State private var showingPlayer = false
+
+    init(script: PracticeScriptEntity) {
+        self._script = ObservedObject(wrappedValue: script)
+        self._dialogues = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \PracticeDialogueEntity.order, ascending: true)],
+            predicate: NSPredicate(format: "script == %@", script)
+        )
+    }
 
     var body: some View {
         ScrollView {
@@ -179,7 +189,7 @@ struct PracticeDetailView: View {
 
                 // Stats
                 HStack {
-                    StatView(title: "セリフ数", value: "\(script.dialoguesArray.count)", icon: "text.bubble")
+                    StatView(title: "セリフ数", value: "\(dialogues.count)", icon: "text.bubble")
                     Divider().frame(height: 40)
                     StatView(title: "練習回数", value: "\(script.practiceCount)", icon: "arrow.counterclockwise")
                 }
@@ -192,7 +202,7 @@ struct PracticeDetailView: View {
                     Text("会話フロー")
                         .font(.headline)
 
-                    ForEach(Array(script.dialoguesArray.enumerated()), id: \.element) { index, dialogue in
+                    ForEach(Array(dialogues.enumerated()), id: \.element) { index, dialogue in
                         DialoguePreviewRow(index: index + 1, dialogue: dialogue)
                     }
                 }
