@@ -2,7 +2,7 @@
 
 ## 1. プロジェクト概要
 
-このプロジェクトは、推し活（ヲタ活）のための機能（スケジュール管理、家計簿、会話リハーサル、レポ作成）を統合したiOSネイティブアプリケーションです。
+このプロジェクトは、推し活（ヲタ活）のための機能（スケジュール管理、家計簿、会話練習、レポ作成）を統合したiOSネイティブアプリケーションです。
 
 * **アプリ名:** ヲタ活サポート
 * **プラットフォーム:** iOS 14+ (iPhone, iPad互換)
@@ -36,7 +36,7 @@ MeetAndGreet/
 │   ├── Budget/
 │   │   └── BudgetView.swift        # 家計簿・グラフ表示
 │   ├── Practice/
-│   │   └── PracticeListView.swift  # リハーサル・TTS連携
+│   │   └── PracticeListView.swift  # 会話練習・TTS連携
 │   └── Report/
 │       └── ReportListView.swift    # レポ・チャット形式ログ
 ├── Services/
@@ -91,21 +91,21 @@ MeetAndGreet/
 - `PieChartView` / `BarChartView` - カスタムグラフ
 - `ExpenseDetailView` / `ExpenseEditorView` - 詳細・編集
 
-### 4.3 リハーサル（PracticeListView）
+### 4.3 会話練習（PracticeListView）
 
 | 機能 | 説明 |
 | :--- | :--- |
-| スクリプト管理 | 会話シナリオの作成・編集・削除 |
-| 会話フロー | 自分/推しの交互セリフ設定 |
+| シナリオ管理 | 会話シナリオの作成・編集・削除 |
+| 会話の流れ | 自分/推しの交互セリフ設定 |
 | 練習プレイヤー | TTS読み上げ、進捗表示、練習回数カウント |
-| お気に入り | スクリプトのお気に入り登録 |
+| お気に入り | シナリオのお気に入り登録 |
 
 **イベントタイプ:** 接触イベント、握手会、撮影会、サイン会、トークイベント、その他
 
 **関連コンポーネント:**
-- `PracticeDetailView` - スクリプト詳細・会話フロー表示
+- `PracticeDetailView` - シナリオ詳細・会話の流れ表示
 - `PracticePlayerView` - フルスクリーン練習プレイヤー
-- `ScriptEditorView` - スクリプト・セリフ編集
+- `ScriptEditorView` - シナリオ・セリフ編集
 
 ### 4.4 レポ（ReportListView）
 
@@ -180,8 +180,8 @@ Color.forEventCategory(_ category: EventCategory) -> Color
 | :--- | :--- |
 | `NSPhotoLibraryUsageDescription` | 画像選択 |
 | `NSPhotoLibraryAddUsageDescription` | 画像保存 |
-| `NSMicrophoneUsageDescription` | 音声録音（リハーサル） |
-| `NSSpeechRecognitionUsageDescription` | 音声認識（リハーサル） |
+| `NSMicrophoneUsageDescription` | 音声録音（会話練習） |
+| `NSSpeechRecognitionUsageDescription` | 音声認識（会話練習） |
 
 ---
 
