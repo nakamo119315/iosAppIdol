@@ -21,7 +21,7 @@ struct ContentView: View {
 
             PracticeListView()
                 .tabItem {
-                    Label("リハーサル", systemImage: "mic.fill")
+                    Label("会話練習", systemImage: "bubble.left.and.bubble.right.fill")
                 }
                 .tag(2)
 

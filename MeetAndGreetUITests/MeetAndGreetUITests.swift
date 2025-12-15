@@ -31,7 +31,7 @@ class MeetAndGreetUITests: XCTestCase {
     func testAllTabsExist() throws {
         XCTAssertTrue(app.tabBars.buttons["スケジュール"].exists)
         XCTAssertTrue(app.tabBars.buttons["家計簿"].exists)
-        XCTAssertTrue(app.tabBars.buttons["リハーサル"].exists)
+        XCTAssertTrue(app.tabBars.buttons["会話練習"].exists)
         XCTAssertTrue(app.tabBars.buttons["レポ"].exists)
     }
 
@@ -40,9 +40,9 @@ class MeetAndGreetUITests: XCTestCase {
         app.tabBars.buttons["家計簿"].tap()
         XCTAssertTrue(app.navigationBars["家計簿"].exists)
 
-        // Navigate to リハーサル
-        app.tabBars.buttons["リハーサル"].tap()
-        XCTAssertTrue(app.navigationBars["リハーサル"].exists)
+        // Navigate to 会話練習
+        app.tabBars.buttons["会話練習"].tap()
+        XCTAssertTrue(app.navigationBars["会話練習"].exists)
 
         // Navigate to レポ
         app.tabBars.buttons["レポ"].tap()
@@ -110,18 +110,18 @@ class MeetAndGreetUITests: XCTestCase {
     // MARK: - Practice Tests
 
     func testPracticeScreenElements() throws {
-        app.tabBars.buttons["リハーサル"].tap()
-        XCTAssertTrue(app.navigationBars["リハーサル"].exists)
+        app.tabBars.buttons["会話練習"].tap()
+        XCTAssertTrue(app.navigationBars["会話練習"].exists)
     }
 
     func testPracticeAddFlow() throws {
-        app.tabBars.buttons["リハーサル"].tap()
+        app.tabBars.buttons["会話練習"].tap()
 
         // Tap add button
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
         // Check editor appears
-        XCTAssertTrue(app.navigationBars["新規スクリプト"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.navigationBars["新しいシナリオ"].waitForExistence(timeout: 2))
 
         // Cancel
         app.buttons["キャンセル"].tap()

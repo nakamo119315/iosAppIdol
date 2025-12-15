@@ -19,7 +19,7 @@ struct PracticeListView: View {
                     scriptList
                 }
             }
-            .navigationTitle("リハーサル")
+            .navigationTitle("会話練習")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddSheet = true }) {
@@ -35,34 +35,62 @@ struct PracticeListView: View {
 
     private var scriptList: some View {
         List {
-            ForEach(scripts, id: \.self) { script in
-                NavigationLink(destination: PracticeDetailView(script: script)) {
-                    ScriptRowView(script: script)
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: "lightbulb.fill")
+                        .foregroundColor(.yellow)
+                    Text("シナリオをタップして練習を開始できます")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
+                .padding(.vertical, 4)
             }
-            .onDelete(perform: deleteScripts)
+
+            Section(header: Text("会話シナリオ")) {
+                ForEach(scripts, id: \.self) { script in
+                    NavigationLink(destination: PracticeDetailView(script: script)) {
+                        ScriptRowView(script: script)
+                    }
+                }
+                .onDelete(perform: deleteScripts)
+            }
         }
         .listStyle(InsetGroupedListStyle())
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "text.bubble")
+        VStack(spacing: 20) {
+            Image(systemName: "bubble.left.and.bubble.right.fill")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(.pink.opacity(0.6))
 
-            Text("スクリプトがありません")
-                .font(.headline)
+            VStack(spacing: 8) {
+                Text("推しとの会話を練習しよう")
+                    .font(.title3)
+                    .fontWeight(.bold)
 
-            Text("会話のリハーサル用スクリプトを作成しましょう")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+                Text("接触イベントで何を話すか迷ったことはありませんか？\n会話シナリオを作成して、事前にシミュレーションできます")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }
 
-            Button("スクリプトを作成") {
-                showingAddSheet = true
+            VStack(alignment: .leading, spacing: 12) {
+                FeatureRow(icon: "pencil.and.outline", text: "伝えたいセリフを書き出す")
+                FeatureRow(icon: "speaker.wave.2.fill", text: "推しのセリフは音声で再生")
+                FeatureRow(icon: "arrow.counterclockwise", text: "何度でも繰り返し練習")
             }
             .padding()
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+
+            Button(action: { showingAddSheet = true }) {
+                Label("シナリオを作成", systemImage: "plus.circle.fill")
+                    .font(.headline)
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
             .background(Color.pink)
             .foregroundColor(.white)
             .cornerRadius(12)
@@ -199,7 +227,7 @@ struct PracticeDetailView: View {
 
                 // Dialogues
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("会話フロー")
+                    Text("会話の流れ")
                         .font(.headline)
 
                     ForEach(Array(dialogues.enumerated()), id: \.element) { index, dialogue in
@@ -223,7 +251,7 @@ struct PracticeDetailView: View {
             }
             .padding()
         }
-        .navigationTitle("スクリプト詳細")
+        .navigationTitle("シナリオ詳細")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -326,8 +354,23 @@ struct ScriptEditorView: View {
     var body: some View {
         NavigationView {
             Form {
+                if script == nil {
+                    Section {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("会話シナリオの作り方")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            Text("1. 推しに言いたいことを「自分」に入力\n2. 予想される返答を「推し」に入力\n3. 練習では推しのセリフが音声で再生されます")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineSpacing(4)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
                 Section(header: Text("基本情報")) {
-                    TextField("タイトル", text: $title)
+                    TextField("タイトル（例：握手会の挨拶）", text: $title)
 
                     Picker("イベントタイプ", selection: $eventType) {
                         ForEach(PracticeEventType.allCases, id: \.self) { type in
@@ -335,10 +378,10 @@ struct ScriptEditorView: View {
                         }
                     }
 
-                    TextField("説明", text: $scriptDescription)
+                    TextField("メモ（任意）", text: $scriptDescription)
                 }
 
-                Section(header: Text("会話フロー")) {
+                Section(header: Text("会話の流れ"), footer: Text("「推し」のセリフは練習時に音声で再生されます")) {
                     ForEach(dialogues.indices, id: \.self) { index in
                         VStack(alignment: .leading, spacing: 8) {
                             Picker("話者", selection: $dialogues[index].isUser) {
@@ -357,17 +400,18 @@ struct ScriptEditorView: View {
 
                     HStack {
                         Button(action: { dialogues.append(DialogueItem(content: "", isUser: true)) }) {
-                            Label("自分", systemImage: "plus.circle")
+                            Label("自分を追加", systemImage: "plus.circle")
                         }
                         Spacer()
                         Button(action: { dialogues.append(DialogueItem(content: "", isUser: false)) }) {
-                            Label("推し", systemImage: "plus.circle.fill")
+                            Label("推しを追加", systemImage: "plus.circle.fill")
+                                .foregroundColor(.pink)
                         }
                     }
                     .font(.subheadline)
                 }
             }
-            .navigationTitle(script == nil ? "新規スクリプト" : "スクリプト編集")
+            .navigationTitle(script == nil ? "新しいシナリオ" : "シナリオ編集")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -631,6 +675,21 @@ struct PracticePlayerView: View {
         script.practiceCount += 1
         script.lastPracticedAt = Date()
         CoreDataStack.shared.saveContext()
+    }
+}
+
+struct FeatureRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundColor(.pink)
+                .frame(width: 24)
+            Text(text)
+                .font(.subheadline)
+        }
     }
 }
 

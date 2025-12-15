@@ -55,7 +55,7 @@ class MeetAndGreetUITestsLaunchTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        app.tabBars.buttons["リハーサル"].tap()
+        app.tabBars.buttons["会話練習"].tap()
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Practice Tab"
