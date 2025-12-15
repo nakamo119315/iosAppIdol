@@ -321,7 +321,11 @@ struct ReportDetailView: View {
         }) {
             ReportEditorView(report: report)
         }
-        .sheet(isPresented: $showingMessageEditor) {
+        .sheet(isPresented: $showingMessageEditor, onDismiss: {
+            if let message = editingMessage {
+                viewContext.refresh(message, mergeChanges: true)
+            }
+        }) {
             if let message = editingMessage {
                 MessageEditorSheet(message: message, messageText: editingMessageText)
             }
