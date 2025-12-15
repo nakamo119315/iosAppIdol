@@ -128,6 +128,8 @@ struct ReportDetailView: View {
     @Environment(\.presentationMode) var presentationMode
 
     @ObservedObject var report: ReportEntity
+    @FetchRequest private var messages: FetchedResults<ChatMessageEntity>
+
     @State private var showingEditSheet = false
     @State private var showingMessageInput = false
     @State private var newMessageText = ""
@@ -135,7 +137,14 @@ struct ReportDetailView: View {
     @State private var editingMessage: ChatMessageEntity?
     @State private var editingMessageText = ""
     @State private var showingMessageEditor = false
-    @State private var refreshID = UUID()
+
+    init(report: ReportEntity) {
+        self._report = ObservedObject(wrappedValue: report)
+        self._messages = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \ChatMessageEntity.order, ascending: true)],
+            predicate: NSPredicate(format: "report == %@", report)
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -196,7 +205,7 @@ struct ReportDetailView: View {
                     }
 
                     // Chat section header
-                    if !report.messagesArray.isEmpty {
+                    if !messages.isEmpty {
                         HStack {
                             Image(systemName: "bubble.left.and.bubble.right")
                                 .foregroundColor(.gray)
@@ -210,7 +219,7 @@ struct ReportDetailView: View {
                     }
 
                     // Chat messages
-                    ForEach(report.messagesArray, id: \.self) { message in
+                    ForEach(messages, id: \.self) { message in
                         ChatBubbleView(message: message)
                             .contextMenu {
                                 Button(action: {
@@ -223,14 +232,12 @@ struct ReportDetailView: View {
                                 Button(action: {
                                     viewContext.delete(message)
                                     CoreDataStack.shared.saveContext()
-                                    refreshID = UUID()
                                 }) {
                                     Label("削除", systemImage: "trash")
                                         .foregroundColor(.red)
                                 }
                             }
                     }
-                    .id(refreshID)
                 }
                 .padding()
             }
@@ -312,11 +319,9 @@ struct ReportDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             ReportEditorView(report: report)
         }
-        .sheet(isPresented: $showingMessageEditor, onDismiss: {
-            refreshID = UUID()
-        }) {
+        .sheet(isPresented: $showingMessageEditor) {
             if let message = editingMessage {
-                MessageEditorSheet(message: message, messageText: editingMessageText, report: report)
+                MessageEditorSheet(message: message, messageText: editingMessageText)
             }
         }
     }
@@ -327,11 +332,10 @@ struct ReportDetailView: View {
         let message = ChatMessageEntity.create(in: viewContext, report: report)
         message.content = newMessageText
         message.messageType = isUserMessage ? "user" : "oshi"
-        message.order = Int32(report.messagesArray.count)
+        message.order = Int32(messages.count)
 
         newMessageText = ""
         CoreDataStack.shared.saveContext()
-        refreshID = UUID()
     }
 }
 
@@ -363,13 +367,11 @@ struct MessageEditorSheet: View {
     @Environment(\.presentationMode) var presentationMode
 
     @ObservedObject var message: ChatMessageEntity
-    @ObservedObject var report: ReportEntity
     @State var messageText: String
     @State private var isUserSpeaker: Bool = true
 
-    init(message: ChatMessageEntity, messageText: String, report: ReportEntity) {
+    init(message: ChatMessageEntity, messageText: String) {
         self.message = message
-        self.report = report
         self._messageText = State(initialValue: messageText)
         self._isUserSpeaker = State(initialValue: message.isUserMessage)
     }
@@ -403,7 +405,6 @@ struct MessageEditorSheet: View {
                         message.content = messageText
                         message.messageType = isUserSpeaker ? "user" : "oshi"
                         CoreDataStack.shared.saveContext()
-                        report.objectWillChange.send()
                         presentationMode.wrappedValue.dismiss()
                     }
                     .disabled(messageText.isEmpty)
