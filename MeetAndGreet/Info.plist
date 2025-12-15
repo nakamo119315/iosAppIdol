@@ -49,11 +49,11 @@
 
     <!-- Privacy - Speech Recognition -->
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>会話リハーサル機能であなたの発言を認識するために音声認識を使用します。認識データはセッション終了後に即座に破棄されます。</string>
+    <string>会話練習機能であなたの発言を認識するために音声認識を使用します。認識データはセッション終了後に即座に破棄されます。</string>
 
     <!-- Privacy - Microphone -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>会話リハーサル機能であなたの声を録音するためにマイクを使用します。録音データはセッション終了後に即座に破棄されます。</string>
+    <string>会話練習機能であなたの声を録音するためにマイクを使用します。録音データはセッション終了後に即座に破棄されます。</string>
 
     <!-- Privacy - Photo Library -->
     <key>NSPhotoLibraryUsageDescription</key>
