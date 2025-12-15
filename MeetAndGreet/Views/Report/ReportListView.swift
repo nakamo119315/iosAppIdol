@@ -346,7 +346,7 @@ struct ReportDetailView: View {
 }
 
 struct ChatBubbleView: View {
-    let message: ChatMessageEntity
+    @ObservedObject var message: ChatMessageEntity
 
     var body: some View {
         HStack {
