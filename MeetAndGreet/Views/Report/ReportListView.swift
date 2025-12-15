@@ -316,7 +316,9 @@ struct ReportDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingEditSheet) {
+        .sheet(isPresented: $showingEditSheet, onDismiss: {
+            viewContext.refresh(report, mergeChanges: true)
+        }) {
             ReportEditorView(report: report)
         }
         .sheet(isPresented: $showingMessageEditor) {
