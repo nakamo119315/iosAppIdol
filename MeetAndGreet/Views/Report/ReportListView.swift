@@ -494,6 +494,8 @@ struct ReportEditorView: View {
         entity.rating = rating
         entity.notes = notes
         CoreDataStack.shared.saveContext()
+        // 編集時は親ビューに変更を通知
+        report?.objectWillChange.send()
     }
 }
 
