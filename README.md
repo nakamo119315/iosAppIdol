@@ -16,8 +16,8 @@ A comprehensive iOS app for managing fan activities (推し活/ヲタ活) - help
 - Paid/unpaid status management
 - Monthly spending summary
 
-### Practice (リハーサル)
-- Conversation script creation for fan events
+### Practice (会話練習)
+- Conversation scenario creation for fan events
 - Dialogue flow with user/idol speaker roles
 - Text-to-Speech (TTS) integration for practice
 - Practice count tracking
@@ -49,7 +49,7 @@ MeetAndGreet/
 ├── Views/
 │   ├── Schedule/              # Event management views
 │   ├── Budget/                # Expense tracking views
-│   ├── Practice/              # Rehearsal views with TTS
+│   ├── Practice/              # Conversation practice views with TTS
 │   └── Report/                # Memory recording views
 ├── Services/
 │   ├── TtsService.swift       # Text-to-Speech
